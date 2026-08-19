@@ -140,7 +140,7 @@ class SimpleCalendar(GenericCalendar):
         :return: Returns a tuple (Boolean,datetime), indicating if a date is selected
                     and returning the date if so.
         """
-        return_data = (False, None)
+        return_data = (self.ProcessSelectionEnum.Fail, None, None)
 
         # processing empty buttons, answering with no action
         if data.act == SimpleCalAct.ignore:
@@ -151,7 +151,9 @@ class SimpleCalendar(GenericCalendar):
 
         # user picked a day button, return date
         if data.act == SimpleCalAct.day:
-            return await self.process_day_select(data, query)
+            status, date1, date2 = await self.process_day_select(data, query)
+            if (status != self.ProcessSelectionEnum.ProcessingRangeSelection):
+                return status, date1, date2
 
         # user navigates to previous year, editing message with new calendar
         if data.act == SimpleCalAct.prev_y:

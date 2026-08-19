@@ -6,6 +6,8 @@ from datetime import datetime
 
 from .schemas import CalendarLabels
 
+from enum import Enum
+
 
 async def get_user_locale(from_user: User) -> str:
     "Returns user locale in format en_US, accepts User instance from Message, CallbackData etc"
@@ -20,7 +22,8 @@ class GenericCalendar:
         locale: str = None,
         cancel_btn: str = None,
         today_btn: str = None,
-        show_alerts: bool = False
+        show_alerts: bool = False,
+        range_mode: bool = False
     ) -> None:
         """Pass labels if you need to have alternative language of buttons
 
@@ -45,11 +48,20 @@ class GenericCalendar:
         self.min_date = None
         self.max_date = None
         self.show_alerts = show_alerts
+        self.date1 = None
+        self.date2 = None
+        self.range_mode = range_mode
 
     def set_dates_range(self, min_date: datetime, max_date: datetime):
         """Sets range of minimum & maximum dates"""
         self.min_date = min_date
         self.max_date = max_date
+
+    class ProcessSelectionEnum(Enum):
+        Fail = 1
+        SuccessSingle = 2
+        SuccessRange = 3
+        ProcessingRangeSelection = 4
 
     async def process_day_select(self, data, query):
         """Checks selected date is in allowed range of dates"""
@@ -66,5 +78,14 @@ class GenericCalendar:
                 show_alert=self.show_alerts
             )
             return False, None
+
+        if (self.range_mode is True):
+            if (self.date1 is None):
+                self.date1 = date
+                return self.ProcessSelectionEnum.ProcessingRangeSelection, self.date1, self.date2
+            else:
+                self.date2 = date
+                await query.message.delete_reply_markup()
+                return self.ProcessSelectionEnum.SuccessRange, self.date1, self.date2
         await query.message.delete_reply_markup()  # removing inline keyboard
-        return True, date
+        return self.ProcessSelectionEnum.SuccessSingle, date, date
